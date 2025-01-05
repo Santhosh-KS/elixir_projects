@@ -1,0 +1,13 @@
+<div class="tips">
+  <h1>Hello</h1>
+
+  {Enum.random(1..10)}
+  <pre>
+    {@emojis}
+  </pre>
+  <ol>
+    <%= for e <- @mytips do %>
+      <li>{e.text}</li>
+    <% end %>
+  </ol>
+</div>
