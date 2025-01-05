@@ -2,6 +2,10 @@ defmodule HeadsUpWeb.EffortLive do
   use HeadsUpWeb, :live_view
 
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Process.send_after(self(), :tick, 2000)
+    end
+
     socket = assign(socket, responders: 0, minutes: 10)
     {:ok, socket}
   end
@@ -41,5 +45,10 @@ defmodule HeadsUpWeb.EffortLive do
   def handle_event("set-minutes", %{"minutes" => min}, socket) do
     socket = assign(socket, :minutes, String.to_integer(min))
     {:noreply, socket}
+  end
+
+  def handle_info(:tick, socket) do
+    Process.send_after(self(), :tick, 2000)
+    {:noreply, update(socket, :responders, &(&1 + 4))}
   end
 end
