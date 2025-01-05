@@ -2,7 +2,7 @@ defmodule HeadsUpWeb.EffortLive do
   use HeadsUpWeb, :live_view
 
   def mount(_params, _session, socket) do
-    socket = assign(socket, responders: 0, time: 10)
+    socket = assign(socket, responders: 0, minutes: 10)
     {:ok, socket}
   end
 
@@ -17,19 +17,29 @@ defmodule HeadsUpWeb.EffortLive do
         </div>
         @
         <div>
-          {@time}
+          {@minutes}
         </div>
         =
         <div>
-          {@responders * @time}
+          {@responders * @minutes}
         </div>
       </section>
+
+      <form phx-submit="set-minutes">
+        <label>Minutes : </label>
+        <input type="number" name="minutes" value={@minutes} />
+      </form>
     </div>
     """
   end
 
   def handle_event("add", %{"qty" => qty}, socket) do
     socket = update(socket, :responders, &(&1 + String.to_integer(qty)))
+    {:noreply, socket}
+  end
+
+  def handle_event("set-minutes", %{"minutes" => min}, socket) do
+    socket = assign(socket, :minutes, String.to_integer(min))
     {:noreply, socket}
   end
 end
