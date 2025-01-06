@@ -13,6 +13,15 @@ defmodule HeadsUpWeb.IncidentLive.Index do
   def render(assigns) do
     ~H"""
     <div class="incident-index">
+      <.headline>
+        <.icon name="hero-trophy-mini" /> 25 Incidents Resolved This Month!
+        <:tagline :let={vibe}>
+          Thanks for pitching in. {vibe}
+        </:tagline>
+        <:tagline :let={vibe}>
+          Next tagline. {vibe}
+        </:tagline>
+      </.headline>
       <div class="incidents">
         <.incident_card :for={incident <- @incidents} incident={incident} />
       </div>
@@ -53,7 +62,7 @@ defmodule HeadsUpWeb.IncidentLive.Index do
     """
   end
 
-  attr :status, :atom, values: [:pending, :resolved, :canceled], default: :pending
+  attr :priority, :atom, required: true
 
   def priority(assigns) do
     ~H"""
