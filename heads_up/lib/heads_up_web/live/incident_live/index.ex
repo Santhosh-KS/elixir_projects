@@ -6,7 +6,9 @@ defmodule HeadsUpWeb.IncidentLive.Index do
   import HeadsUpWeb.CustomComponents
 
   def mount(_params, _session, socket) do
-    socket = stream(socket, :incidents, Incidents.list_incidents())
+    socket = stream(socket, :incidents, Incidents.filer_incidents())
+    # socket = stream(socket, :incidents, Incidents.list_incidents())
+
     # IO.inspect(socket.assigns.streams.incidents, lable: "MOUNT")
 
     # socket =
