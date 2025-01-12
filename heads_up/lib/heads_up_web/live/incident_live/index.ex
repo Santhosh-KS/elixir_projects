@@ -6,8 +6,13 @@ defmodule HeadsUpWeb.IncidentLive.Index do
   import HeadsUpWeb.CustomComponents
 
   def mount(_params, _session, socket) do
-    socket = stream(socket, :incidents, Incidents.filer_incidents())
-    # socket = stream(socket, :incidents, Incidents.list_incidents())
+    # socket = stream(socket, :incidents, Incidents.filer_incidents())
+    form = to_form(%{"q" => "", "status" => "", "sort_by" => ""})
+
+    socket =
+      socket
+      |> stream(:incidents, Incidents.list_incidents())
+      |> assign(:form, form)
 
     # IO.inspect(socket.assigns.streams.incidents, lable: "MOUNT")
 
@@ -21,6 +26,10 @@ defmodule HeadsUpWeb.IncidentLive.Index do
 
   def render(assigns) do
     ~H"""
+    <!-- <pre>
+      {inspect(@form, pretty: true)}
+      {inspect(@form[:q], pretty: true)}
+    </pre> -->
     <div class="incident-index">
       <.headline>
         <.icon name="hero-trophy-mini" /> 25 Incidents Resolved This Month!
@@ -31,6 +40,7 @@ defmodule HeadsUpWeb.IncidentLive.Index do
           Next tagline. {vibe}
         </:tagline>
       </.headline>
+      <.filter_form form={@form}></.filter_form>
       <div class="incidents" id="incidents" phx-update="stream">
         <.incident_card
           :for={{dom_id, incident} <- @streams.incidents}
@@ -39,6 +49,21 @@ defmodule HeadsUpWeb.IncidentLive.Index do
         />
       </div>
     </div>
+    """
+  end
+
+  def filter_form(assigns) do
+    ~H"""
+    <.form for={@form}>
+      <.input field={@form[:q]} placeholder="Search..." autocomplete="off" />
+      <.input
+        type="select"
+        field={@form[:status]}
+        prompt="Status"
+        options={[:upcoming, :open, :closed]}
+      />
+      <.input type="select" field={@form[:sort_by]} prompt="Sort By" options={[:priority, :name]} />
+    </.form>
     """
   end
 
