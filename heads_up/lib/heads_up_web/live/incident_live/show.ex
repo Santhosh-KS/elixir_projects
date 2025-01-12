@@ -8,6 +8,10 @@ defmodule HeadsUpWeb.IncidentLive.Show do
 
   def render(assigns) do
     ~H"""
+    <!-- <pre :if={true}>
+      { inspect(@urgent_incidents, pretty: true)}
+    </pre> -->
+
     <div class="incident-show">
       <div class="incident">
         <img src={@incident.image_path} />
@@ -44,7 +48,10 @@ defmodule HeadsUpWeb.IncidentLive.Show do
       socket
       |> assign(:incident, incident)
       |> assign(:page_title, incident.name)
-      |> assign(:urgent_incidents, Incidents.urgent_incidents(incident))
+      |> assign_async(:urgent_incidents, fn ->
+        {:ok, %{urgent_incidents: Incidents.urgent_incidents(incident)}}
+        # {:error, "Oh Snap!"}
+      end)
 
     {:noreply, socket}
   end
@@ -53,13 +60,28 @@ defmodule HeadsUpWeb.IncidentLive.Show do
     ~H"""
     <section>
       <h4>Urgent Incidents</h4>
-      <ul class="incidents">
-        <li :for={incident <- @incidents}>
-          <.link navigate={~p"/incidents/#{incident.id}"}>
-            <img src={incident.image_path} /> {incident.name}
-          </.link>
-        </li>
-      </ul>
+      <.async_result :let={result} assign={@incidents}>
+        <!-- Loading Case -->
+        <:loading>
+          <div class="loading">
+            <div class="spinner"></div>
+          </div>
+        </:loading>
+        <!-- Failed Case -->
+        <:failed :let={{:error, reason}}>
+          <div class="failed">
+            Yikes: {reason}
+          </div>
+        </:failed>
+        <!-- SUCCESS Case -->
+        <ul class="incidents">
+          <li :for={incident <- result}>
+            <.link navigate={~p"/incidents/#{incident.id}"}>
+              <img src={incident.image_path} /> {incident.name}
+            </.link>
+          </li>
+        </ul>
+      </.async_result>
     </section>
     """
   end
