@@ -54,13 +54,16 @@ defmodule HeadsUpWeb.IncidentLive.Index do
 
   def filter_form(assigns) do
     ~H"""
-    <.form for={@form}>
+    <.form for={@form} id="filter-form" phx-change="filter">
       <.input field={@form[:q]} placeholder="Search..." autocomplete="off" />
       <.input
         type="select"
         field={@form[:status]}
         prompt="Status"
-        options={[:upcoming, :open, :closed]}
+        options={[
+          "Priority: High to Low": "priority_desc",
+          "Priority: Low to High": "priority_asc"
+        ]}
       />
       <.input type="select" field={@form[:sort_by]} prompt="Sort By" options={[:priority, :name]} />
     </.form>
@@ -111,5 +114,14 @@ defmodule HeadsUpWeb.IncidentLive.Index do
       {@priority}
     </div>
     """
+  end
+
+  def handle_event("filter", params, socket) do
+    socket =
+      socket
+      |> assign(:form, to_form(params))
+      |> stream(:incidents, Incidents.filer_incidents(params), reset: true)
+
+    {:noreply, socket}
   end
 end
