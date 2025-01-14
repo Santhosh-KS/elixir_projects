@@ -11,13 +11,26 @@ defmodule HeadsUp.Admin do
   end
 
   def create_incident(attrs \\ %{}) do
-    %Incident{
-      name: attrs["name"],
-      description: attrs["description"],
-      priority: attrs["priority"] |> String.to_integer(),
-      status: attrs["status"] |> String.to_existing_atom(),
-      image_path: attrs["image_path"]
-    }
-    |> Repo.insert!()
+    %Incident{}
+    |> Incident.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def change_incident(%Incident{} = incident, attrs \\ %{}) do
+    Incident.changeset(incident, attrs)
+  end
+
+  def get_incident!(id) do
+    Repo.get!(Incident, id)
+  end
+
+  def update_incident(%Incident{} = incident, attrs) do
+    incident
+    |> Incident.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_incident(%Incident{} = incident) do
+    Repo.delete(incident)
   end
 end

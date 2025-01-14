@@ -1,7 +1,6 @@
 defmodule HeadsUpWeb.AdminIncidentLive.Index do
   use HeadsUpWeb, :live_view
 
-  alias HeadsUpWeb.AdminIncidentLive
   alias HeadsUp.Admin
 
   import HeadsUpWeb.CustomComponents
@@ -38,8 +37,23 @@ defmodule HeadsUpWeb.AdminIncidentLive.Index do
         <:col :let={{_dom_id, incident}} label="Priority">
           {incident.priority}
         </:col>
+        <:action :let={{_dom_id, incident}}>
+          <.link navigate={~p"/admin/incidents/#{incident}/edit"}> Edit </.link>
+        </:action>
+        <:action :let={{_dom_id, incident}}>
+          <.link phx-click="delete" phx-value-id={incident.id} data-confir="Are you sure?">
+            Delete
+          </.link>
+        </:action>
       </.table>
     </div>
     """
+  end
+
+  def handle_event("delete", %{"id" => id}, socket) do
+    incident = Admin.get_incident!(id)
+    {:ok, _} = Admin.delete_incident(incident)
+    socket = stream_delete(socket, :incidents, incident)
+    {:noreply, socket}
   end
 end
