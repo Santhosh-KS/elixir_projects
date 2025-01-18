@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :music_db, :ecto_repos, [MusicDB.Repo]
 
