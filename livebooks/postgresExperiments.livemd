@@ -1,0 +1,56 @@
+# Postgres Setup in LiveView
+
+```elixir
+Mix.install([
+  {:postgrex, "~> 0.20.0"},
+  {:kino_db, "~> 0.3.0"}
+])
+```
+
+## Section
+
+### Setup
+
+Here are some cofigurations I need to modify for the Docker Image to access my local postgres.
+
+```sh
+# Enable postgress to be accessible from any client.
+sudo nano /etc/postgresql/14/main/postgresql.conf
+# Modified this line
+listen_addresses = '*'
+#  give access to the docker
+sudo nano /etc/postgresql/*/main/pg_hba.conf
+
+# Add this line at the bottom of the file.
+host    all             all             172.17.0.0/16           md5
+```
+
+Save and exit the files and restart the postgres `sudo systemctl restart postgresql`
+
+### Command used to start the Docker
+
+`sudo docker run -p 8080:8080 -p 8081:8081 --pull always --add-host=host.docker.internal:host-gateway  -u $(id -u):$(id -g) -v $(pwd):/data ghcr.io/livebook-dev/livebook`
+
+Notice the additional `--add-host=host.docker.internal:host-gateway` option in the command.
+
+With this changes I added the required dependeices in the Livebook and in the Elixir cell I have the following code.
+
+```elixir
+opts = [
+  hostname: "host.docker.internal",
+  username: "mygsuser",
+  database: "ecto_db_new",
+  password: "pa55word",
+  port: 5432,
+  name: {:global, :my_db_conn}  # Give our connection a name
+]
+```
+
+```elixir
+{:ok, conn} = Postgrex.start_link(opts)
+```
+
+```elixir
+# Test it with a more complex query
+Postgrex.query!(conn, "SELECT current_database(), current_user", [])
+```
