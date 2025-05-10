@@ -112,6 +112,7 @@ defmodule WeltFacto.Logic do
     }
   }
   """
+
   def question(q) when is_binary(q) do
     # IO.inspect("q-1")
 
@@ -156,7 +157,7 @@ defmodule WeltFacto.Logic do
       # IO.inspect("q-if-2")
 
       # intercepting the tool call and handling it appropriately
-      content = handle_tool_call(List.first(tool))
+      content = handle_tool_call(:emoji, List.first(tool))
       # IO.inspect("q-if-3")
       tool_content = %{
         role: "tool",
@@ -184,17 +185,182 @@ defmodule WeltFacto.Logic do
     end
   end
 
-  defp handle_tool_call(tool) when is_map(tool) do
-    # IO.inspect("htc-1")
-    code = tool["function"]["arguments"]["country"]
-    fnc = tool["function"]["name"]
-    handle_emoji_flag(code, fnc)
+  def details_tool(q) when is_binary(q) do
+    IO.inspect("DT-1")
+
+    description = """
+    This function is capable of fetching the following details about a country.
+    | field                  | Info                                                                                            |
+    |------------------------|-------------------------------------------------------------------------------------------------|
+    | alpha2Code / cca2      | ISO 3166-1 alpha-2 two-letter country codes                                                     |
+    | alpha3Code / cca3      | ISO 3166-1 alpha-3 three-letter country codes                                                   |
+    | altSpellings           | Alternate spellings of the country name                                                         |
+    | area                   | Geographical size. (Units like Sq Km or Sq Meteris not specified.Hence, do not share the unit for thie field)|
+    | borders                | Shares Border with countries. This data is given as list of Alpha-2 or Alpha-3 codes.           |
+    | callingCodes / idd     | International dialing codes for telephone/fax uses                                              |
+    | capital                | Capital cities                                                                                  |
+    | car > signs            | Car distinguised (oval) signs                                                                   |
+    | car > side             | Car driving side                                                                                |
+    | cioc                   | Code of the International Olympic Committee                                                     |
+    | coatOfArms             | provide png and svg [MainFacts.com](https://mainfacts.com/coat-of-arms-countries-world)         |
+    | continents             | List of continents the country is on                                                            |
+    | currencies             | List of all currencies used by the given conuntry                                               |
+    | demonyms (m/f)         | Genderized inhabitants of the country                                                           |
+    | independent            | ISO 3166-1 independence status (the country is considered a sovereign state or not)             |
+    | fifa                   | FIFA code                                                                                       |
+    | flag                   | flag of the country in emoji form.                                                              |
+    | flags                  | provides the png and svg images links of the flag from [Flagpedia](https://flagpedia.net/)      |
+    | gini                   | Worldbank [Gini](https://data.worldbank.org/indicator/SI.POV.GINI) index                        |
+    | landlocked             | Landlocked country                                                                              |
+    | languages              | List of official languages                                                                      |
+    | latlng                 | Latitude and longitude. (Here do not specify the city. As data is not complete)                                                                          |
+    | maps                   | Provides Link to Google maps and Open Street maps                                                        |
+    | name                   | Country name                                                                                    |
+    | name > official/common | Official and common country name                                                                |
+    | nativeName > official/common| Official and common native country name                                                         |
+    | population             | Country population                                                                              |
+    | region                 | UN [demographic regions](https://unstats.un.org/unsd/methodology/m49/)                          |
+    | status                 | ISO 3166-1 assignment status                                                                    |
+    | subregion              | UN [demographic subregions](https://unstats.un.org/unsd/methodology/m49/)                       |
+    | topLevelDomain / tld   | Internet top level domains, for example: ".de" -> Germany, ".in" -> India etc.                                                                      |
+    | unMember               | UN Member status                                                                                |
+    """
+
+    description_1 = """
+    This function is will be able to get the following details about a country.
+     alpha-2 Code            ISO 3166-1 alpha-2 two-letter country codes
+     alpha-3 Code            ISO 3166-1 alpha-3 three-letter country codes
+     altSpellings            Alternate spellings of the country name
+     area                    Geographical size. (Units like Sq Km or Sq Meteris not specified.Hence, do not share the unit for the field)
+     borders                 Shares Border with countries. This data is given as list of Alpha-2 or Alpha-3 codes.
+     callingCodes / idd      International dialing codes for telephone/fax uses
+     capital                 Capital cities
+     car > signs             Car distinguised (oval) signs
+     car > side              Car driving side
+     cioc                    Code of the International Olympic Committee
+     coatOfArms              provide png and svg [MainFacts.com](https://mainfacts.com/coat-of-arms-countries-world)
+     continents              List of continents the country is on
+     currencies              List of all currencies used by the given conuntry
+     demonyms (m/f)          Genderized inhabitants of the country
+     independent             ISO 3166-1 independence status (the country is considered a sovereign state or not)
+     fifa                    FIFA code
+     flag                    flag of the country in emoji form.
+     flags                   provides the png and svg images links of the flag from [Flagpedia](https://flagpedia.net/)
+     gini                    Worldbank [Gini](https://data.worldbank.org/indicator/SI.POV.GINI) index
+     landlocked              Landlocked country
+     languages               List of official languages
+     latlng                  Latitude and longitude. (Here do not specify the city. As data is not complete)
+     maps                    Provides Link to Google maps and Open Street maps
+     name                    Country name
+     name > official/common  Official and common country name
+     nativeName > official/common Official and common native country name
+     population              Country population
+     region                  UN [demographic regions](https://unstats.un.org/unsd/methodology/m49/)
+     status                  ISO 3166-1 assignment status
+     subregion               UN [demographic subregions](https://unstats.un.org/unsd/methodology/m49/)
+     topLevelDomain / tld    Internet top level domains, for example: ".de" -> Germany, ".in" -> India etc.
+     unMember                UN Member status
+
+    """
+
+    country_details_tool = %{
+      type: "function",
+      function: %{
+        name: "emoji_flag",
+        description: description_1,
+        parameters: %{
+          type: "object",
+          properties: %{
+            country: %{
+              type: "string",
+              description: "Important note: provide only Alpha-3 code of a specific country"
+            }
+          },
+          required: ["country"]
+        }
+      }
+    }
+
+    msg = %{role: "user", content: q}
+
+    IO.inspect("DT-2")
+
+    ollama_client =
+      OllamaWrapper.client(%OllamaWrapper{})
+      |> OllamaWrapper.with_tools(country_details_tool)
+      |> OllamaWrapper.with_messages(msg)
+
+    IO.inspect("DT-3")
+    %{module: module, response: resp} = OllamaWrapper.chat(ollama_client)
+    tool = resp["message"]["tool_calls"]
+    IO.inspect("DT-4")
+
+    if tool != nil do
+      IO.inspect("DT-if-5")
+      tool_msg = %{role: "tool", content: "", tool_calls: tool}
+
+      module =
+        module
+        |> OllamaWrapper.with_messages(tool_msg)
+
+      IO.inspect("DT-if-6")
+
+      # intercepting the tool call and handling it appropriately
+      content = handle_tool_call(:details, List.first(tool))
+      IO.inspect("DT-if-7")
+
+      tool_content = %{
+        role: "tool",
+        content: content
+      }
+
+      IO.inspect("DT-if-8")
+
+      module =
+        module
+        |> OllamaWrapper.with_messages(tool_content)
+
+      IO.inspect("DT-if-9")
+
+      # OllamaWrapper.chat(module, content)
+
+      %{module: module, response: resp} = OllamaWrapper.chat(module)
+      # %{module: module, response: resp} = OllamaWrapper.chat(module, q)
+      IO.inspect("DT-if-10")
+      %{module: module, response: resp}
+    else
+      IO.inspect("DT-else-1")
+      %{module: module, response: resp}
+      resp
+    end
   end
 
-  defp handle_emoji_flag(code, _fnc) do
+  defp handle_tool_call(:emoji, tool) when is_map(tool) do
+    # IO.inspect("htc-1")
+    code = tool["function"]["arguments"]["country"]
+    # fnc = tool["function"]["name"]
+    handle_emoji_flag(code)
+  end
+
+  defp handle_tool_call(:details, tool) when is_map(tool) do
+    IO.inspect("htc for details -1")
+    code = tool["function"]["arguments"]["country"]
+    # fnc = tool["function"]["name"]
+    handle_details(code)
+  end
+
+  defp handle_emoji_flag(code) do
     # IO.inspect("hef-1")
     base_url = "https://restcountries.com/v3.1/"
     c = Infos.client(base_url: base_url, country_code: code)
     "Here is the emoji flag for the country you asked for #{Infos.emoji_flag(c)}"
+  end
+
+  defp handle_details(code) do
+    IO.inspect("hed-1")
+    base_url = "https://restcountries.com/v3.1/"
+    c = Infos.client(base_url: base_url, country_code: code)
+    details = Infos.details(c)
+    "Here is the all the details of the country you asked for #{details}"
   end
 end

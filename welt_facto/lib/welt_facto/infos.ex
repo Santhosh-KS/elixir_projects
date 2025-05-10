@@ -19,14 +19,29 @@ defmodule WeltFacto.Infos do
 
   def emoji_flag(%WeltFacto.Infos{} = data) do
     url = "/alpha/" <> data.country_code
-    caller("flag", request: data.req, url: url)
+    caller("flag", request: data.req, url: url, cca3: data.country_code)
   end
 
-  defp caller(str, request: request, url: url) do
+  def details(%WeltFacto.Infos{} = data) do
+    url =
+      "/all?fields=flag,coatOfArms,car,cca3,cca2,ccn3,cioc,tld,currencies,languages,flags,maps,latlng,population,area,unMember,altSpellings,borders,idd,demonyms"
+
+    caller("currencies", request: data.req, url: url, cca3: data.country_code)
+  end
+
+  defp caller(str, request: request, url: url, cca3: cca3) do
     case Req.get(request, url: url) do
       {:ok, resp} ->
-        if List.first(resp.body) != nil do
-          List.first(resp.body)[str]
+        IO.inspect("Country cca3: #{cca3}")
+        # IO.inspect(resp.body, label: "CALLER:")
+        item = Enum.filter(resp.body, fn v -> v["cca3"] == cca3 end)
+
+        # Enum.filter(xs, fn x -> x["cca3"] == "TON" end)
+        if List.first(item) != nil do
+          # if List.first(resp.body) != nil do
+          IO.inspect(item)
+          "dummy value"
+          # List.first(resp.body)[str]
         else
           "Something went wrong with body parsing..."
         end
