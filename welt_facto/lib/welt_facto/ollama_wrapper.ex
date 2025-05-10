@@ -39,7 +39,12 @@ defmodule WeltFacto.OllamaWrapper do
   end
 
   def with_tools(%__MODULE__{} = module, tool) when is_map(tool) do
+    # TODO: ++ on lists are not optimal fix it.
     %{module | tools: module.tools ++ [tool]}
+  end
+
+  def with_tools(%__MODULE__{} = module, tools) when is_list(tools) do
+    %{module | tools: module.tools ++ tools}
   end
 
   def with_tools(%__MODULE__{} = module, _tool), do: module
@@ -101,13 +106,7 @@ defmodule WeltFacto.OllamaWrapper do
     end)
   end
 
-  def chat(%__MODULE__{} = module, content) when is_binary(content) do
-    msg = %{role: "user", content: content}
-
-    module =
-      module
-      |> with_messages(msg)
-
+  def chat(%__MODULE__{} = module) do
     {:ok, resp} =
       Ollama.chat(
         module.client,
