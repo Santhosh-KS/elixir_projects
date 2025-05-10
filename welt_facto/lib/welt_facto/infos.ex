@@ -1,22 +1,35 @@
 defmodule WeltFacto.Infos do
-  defstruct base_url: "", url: "", alpha3_country_code: "", req: %Req.Request{}
+  defstruct base_url: "",
+            url: "",
+            country_code: "",
+            req: %Req.Request{}
 
   def client(opts) do
-    %WeltFacto.Infos{req: Req.new(base_url: opts[:base_url]), base_url: opts[:base_url]}
+    %WeltFacto.Infos{
+      req: Req.new(base_url: opts[:base_url]),
+      base_url: opts[:base_url],
+      country_code: opts[:country_code]
+    }
   end
 
   def flags(%WeltFacto.Infos{} = data) do
-    caller("flags", request: data.req, url: data.url)
+    url = "/alpha/" <> data.country_code
+    caller("flags", request: data.req, url: url)
   end
 
   def emoji_flag(%WeltFacto.Infos{} = data) do
-    caller("flag", request: data.req, url: data.url)
+    url = "/alpha/" <> data.country_code
+    caller("flag", request: data.req, url: url)
   end
 
   defp caller(str, request: request, url: url) do
     case Req.get(request, url: url) do
       {:ok, resp} ->
-        List.first(resp.body)[str]
+        if List.first(resp.body) != nil do
+          List.first(resp.body)[str]
+        else
+          "Something went wrong with body parsing..."
+        end
 
       # |> Jason.encode()
 
