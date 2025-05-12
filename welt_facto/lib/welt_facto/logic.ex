@@ -189,7 +189,8 @@ defmodule WeltFacto.Logic do
     IO.inspect("DT-1")
 
     description = """
-    This function is capable of fetching the following details about a country.
+    This function is capable of fetching the following details about a country given in the mardown table format.
+    ```md
     | field                  | Info                                                                                            |
     |------------------------|-------------------------------------------------------------------------------------------------|
     | alpha2Code / cca2      | ISO 3166-1 alpha-2 two-letter country codes                                                     |
@@ -224,43 +225,43 @@ defmodule WeltFacto.Logic do
     | subregion              | UN [demographic subregions](https://unstats.un.org/unsd/methodology/m49/)                       |
     | topLevelDomain / tld   | Internet top level domains, for example: ".de" -> Germany, ".in" -> India etc.                                                                      |
     | unMember               | UN Member status                                                                                |
+    ```
     """
 
     description_1 = """
-    This function is will be able to get the following details about a country.
-     alpha-2 Code            ISO 3166-1 alpha-2 two-letter country codes
-     alpha-3 Code            ISO 3166-1 alpha-3 three-letter country codes
-     altSpellings            Alternate spellings of the country name
-     area                    Geographical size. (Units like Sq Km or Sq Meteris not specified.Hence, do not share the unit for the field)
-     borders                 Shares Border with countries. This data is given as list of Alpha-2 or Alpha-3 codes.
-     callingCodes / idd      International dialing codes for telephone/fax uses
-     capital                 Capital cities
-     car > signs             Car distinguised (oval) signs
-     car > side              Car driving side
-     cioc                    Code of the International Olympic Committee
-     coatOfArms              provide png and svg [MainFacts.com](https://mainfacts.com/coat-of-arms-countries-world)
-     continents              List of continents the country is on
-     currencies              List of all currencies used by the given conuntry
-     demonyms (m/f)          Genderized inhabitants of the country
-     independent             ISO 3166-1 independence status (the country is considered a sovereign state or not)
-     fifa                    FIFA code
-     flag                    flag of the country in emoji form.
-     flags                   provides the png and svg images links of the flag from [Flagpedia](https://flagpedia.net/)
-     gini                    Worldbank [Gini](https://data.worldbank.org/indicator/SI.POV.GINI) index
-     landlocked              Landlocked country
-     languages               List of official languages
-     latlng                  Latitude and longitude. (Here do not specify the city. As data is not complete)
-     maps                    Provides Link to Google maps and Open Street maps
-     name                    Country name
-     name > official/common  Official and common country name
-     nativeName > official/common Official and common native country name
-     population              Country population
-     region                  UN [demographic regions](https://unstats.un.org/unsd/methodology/m49/)
-     status                  ISO 3166-1 assignment status
-     subregion               UN [demographic subregions](https://unstats.un.org/unsd/methodology/m49/)
-     topLevelDomain / tld    Internet top level domains, for example: ".de" -> Germany, ".in" -> India etc.
-     unMember                UN Member status
-
+    This function is one generic function which will get the following details about a country.
+     1. alpha-2 Code -> ISO 3166-1 alpha-2 two-letter country codes
+     2. alpha-3 Code -> ISO 3166-1 alpha-3 three-letter country codes
+     3. altSpellings -> Alternate spellings of the country name
+     4. area -> Geographical size. (Units like Sq Km or Sq Meteris not specified.Hence, do not share the unit for the field)
+     5. borders -> Shares Border with countries. This data is given as list of Alpha-2 or Alpha-3 codes.
+     6. callingCodes / idd -> International dialing codes for telephone/fax uses
+     7. capital -> Capital cities
+     8. car(signs) -> Car distinguised (oval) signs
+     9. car (driving side) -> Car driving side
+     10. cioc -> Code of the International Olympic Committee
+     11. coatOfArms -> provide png and svg [MainFacts.com](https://mainfacts.com/coat-of-arms-countries-world)
+     12. continents -> List of continents the country is on
+     13. currencies -> List of all currencies used by the given conuntry
+     14. demonyms (m/f) -> Genderized inhabitants of the country
+     15. independent -> ISO 3166-1 independence status (the country is considered a sovereign state or not)
+     16. fifa -> FIFA code
+     17. flag -> flag of the country in emoji form.
+     18. flags -> provides the png and svg images links of the flag from [Flagpedia](https://flagpedia.net/)
+     19. gini -> Worldbank [Gini](https://data.worldbank.org/indicator/SI.POV.GINI) index
+     20. landlocked -> Landlocked country
+     21. languages -> List of official languages
+     22. latlng -> Latitude and longitude. (Here do not specify the city. As data is not complete)
+     23. maps -> Provides Link to Google maps and Open Street maps
+     24. courntry name -> Country name
+     25. country name (official/common) ->   Official and common country name
+     26. nativeName (official/common) -> Official and common native country name
+     27. population -> Country population
+     28. region  -> get the deails from [demographic regions](https://unstats.un.org/unsd/methodology/m49/)
+     29. status -> ISO 3166-1 assignment status
+     30. subregion -> UN [demographic subregions](https://unstats.un.org/unsd/methodology/m49/)
+     31. topLevelDomain / tld ->   Internet top level domains, for example: ".de" -> Germany, ".in" -> India etc.
+     32. unMember -> UN Member status
     """
 
     country_details_tool = %{
