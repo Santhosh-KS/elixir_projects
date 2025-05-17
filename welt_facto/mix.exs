@@ -33,6 +33,7 @@ defmodule WeltFacto.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:bcrypt_elixir, "~> 3.0"},
       {:phoenix, "~> 1.8.0-rc.0", override: true},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.10"},
@@ -81,7 +82,9 @@ defmodule WeltFacto.MixProject do
         "tailwind welt_facto --minify",
         "esbuild welt_facto --minify",
         "phx.digest"
-      ]
+      ],
+      server_setup: ["cmd priv/setup_server.sh"]
+      # ss: ["cmd priv/hello.sh"]
     ]
   end
 end

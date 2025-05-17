@@ -7,6 +7,19 @@
 # General application configuration
 import Config
 
+config :welt_facto, :scopes,
+  user: [
+    default: true,
+    module: WeltFacto.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:user, :id],
+    schema_key: :user_id,
+    schema_type: :id,
+    schema_table: :accounts_users,
+    test_data_fixture: WeltFacto.AccountsFixtures,
+    test_login_helper: :register_and_log_in_user
+  ]
+
 config :welt_facto,
   ecto_repos: [WeltFacto.Repo],
   generators: [timestamp_type: :utc_datetime]
