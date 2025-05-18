@@ -1,0 +1,605 @@
+<!-- livebook:{"autosave_interval_s":60} -->
+
+# AgentRestCountries
+
+```elixir
+Mix.install([
+  {:ollama, "~> 0.8.0"},
+  {:kino, "~> 0.15.0"}
+])
+```
+
+## Initial Setup
+
+## Background
+
+In this work book we will create an AI Agent for [RestCountries](https://restcountries.com/).
+
+A free and opensource project wich provides REST API's to know more about the details of any given country.
+
+You can access API through https://restcountries.com/v3.1/all but in order to get a faster response, you should filter the results by the fields you need. Like
+
+```sh
+https://restcountries.com/v3.1/all?fields=name,flags
+```
+
+#### What you need
+
+1. How to locally run [Ollama setup](https://ollama.com/)?
+2. [Livebook](https://livebook.dev/) to run this notebook
+
+## Accessing Ollama in Livebook
+
+Install the ollama dependencies.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+Mix.install([
+  {:ollama, "~> 0.8.0"}
+])
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Make Ollama Accessible from LAN
+
+`OLLAMA_HOST=0.0.0.0:11434 ollama serve`
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+baseUrl="http://192.168.29.19:11434/api/"
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+client = Ollama.init(baseUrl)
+```
+
+```elixir
+prompt= "Why sky is blue?"
+model = "gemma3"
+```
+
+```elixir
+{:ok, response} = Ollama.completion(client, [model: model, prompt: prompt])
+```
+
+Here is the Response from the Ollama Model.
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+response["response"]
+```
+
+## REST Countries Details
+
+```elixir
+name = "India"
+{:ok, req_resp} = Req.get("https://restcountries.com/v3.1/name/#{name}")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+Enum.map(req_resp.body, fn a -> a["name"]["common"] end)
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+cca3="KEN"
+{:ok, cca3_resp} = Req.get("https://restcountries.com/v3.1/alpha?codes=#{cca3}")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+  Enum.map(cca3_resp.body, fn b ->
+      region = b["region"]
+      idd = b["idd"]["root"] <> List.first(b["idd"]["suffixes"])
+      name = b["name"]["common"] 
+      population = b["population"]
+      subregion = b["subregion"]
+      coatOfArms = b["coatOfArms"]
+      emoji_flag = b["flag"]
+      flags = b["flags"]
+      latlang = b["latlng"]
+      borders = b["borders"]
+      currencies = b["currencies"]
+      timezones = b["timezones"]
+      area = b["area"]
+      tld = b["tld"]
+      continents = b["continents"] 
+      independent = b["independent"]
+      unMember = b["unMember"]
+      
+      %{region: region, idd: idd, name: name, population: population,
+        subregion: subregion, 
+        coatOfArms: coatOfArms,
+        emoji_flag: emoji_flag,
+        flags: flags,
+        latlang: latlang,
+        borders: borders,
+        currencies: currencies,
+        timezones: timezones,
+        area: area,
+        tld: tld,
+        continents: continents,
+        independent: independent,
+        unMember: unMember
+        
+      }
+      end)
+```
+
+### Put it all together as a module
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule AgentRestCountries.Info do
+
+  defstruct baseUrl: String, version: String, query: String, url: String
+
+  def default_init() do
+     baseUrl = "https://restcountries.com"
+     version = "v3.1" 
+     query = "alpha?codes="
+
+     init(%{baseUrl: baseUrl, version: version, query: query})
+  end
+
+  def init(
+    %{ baseUrl: baseUrl ,
+       version: version , 
+       query: query }) do
+    
+      %__MODULE__{ 
+        baseUrl: baseUrl,
+         version: version, 
+         query: query, 
+         url: baseUrl <> "/" <> version <> "/" <> query
+       }
+   end
+  
+
+  def country(module, cca3) when is_binary(cca3) do
+     Req.get(module.url <> "#{cca3}")
+  end
+  
+  def details(body) when is_list(body) do
+    Enum.map(body, fn b ->
+      region = b["region"]
+      idd = b["idd"]["root"] <> List.first(b["idd"]["suffixes"])
+      name = b["name"]["common"] 
+      population = b["population"]
+      subregion = b["subregion"]
+      coatOfArms = b["coatOfArms"]
+      emoji_flag = b["flag"]
+      flags = b["flags"]
+      latlang = b["latlng"]
+      borders = b["borders"]
+      currencies = b["currencies"]
+      timezones = b["timezones"]
+      area = b["area"]
+      tld = b["tld"]
+      continents = b["continents"]
+      independent = b["independent"]
+      unMember = b["unMember"]
+      
+      %{region: region, idd: idd, name: name, population: population,
+        subregion: subregion, 
+        coatOfArms: coatOfArms,
+        emoji_flag: emoji_flag,
+        flags: flags,
+        latlang: latlang,
+        borders: borders,
+        currencies: currencies,
+        timezones: timezones,
+        area: area,
+        tld: tld,
+        continents: continents,
+        independent: independent,
+        unMember: unMember}
+      end)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+m = AgentRestCountries.Info.default_init()
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+AgentRestCountries.Info.country(m, "KEN")
+```
+
+### Alpha-3 codes
+
+### [ISO Alpha-3 Country Codes](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3)
+
+| S.No. | Alpha-3 | Country Name        |
+| ----- | ------- | ------------------- |
+| 1     | AFG     | Afghanistan         |
+| 2     | ALB     | Albania             |
+| 3     | DZA     | Algeria             |
+| 4     | AND     | Andorra             |
+| 5     | AGO     | Angola              |
+| 6     | ATG     | Antigua and Barbuda |
+| 7     | ARG     | Argentina           |
+| 8     | ARM     | Armenia             |
+
+<!-- livebook:{"break_markdown":true} -->
+
+### List of countries in the Elixir map format
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+%{
+  "Name" => "Afghanistan",
+  "CCA3" => "AFG"
+}
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule AgentRestCountries.CCA3 do
+  def list_countries() do
+    [
+      %{"Name" => "Afghanistan", "CCA3" => "AFG"},
+      %{"Name" => "Albania", "CCA3" => "ALB"},
+      %{"Name" => "Algeria", "CCA3" => "DZA"},
+      %{"Name" => "Andorra", "CCA3" => "AND"},
+      %{"Name" => "Angola", "CCA3" => "AGO"},
+      %{"Name" => "Antigua and Barbuda", "CCA3" => "ATG"},
+      %{"Name" => "Argentina", "CCA3" => "ARG"},
+      %{"Name" => "Armenia", "CCA3" => "ARM"},
+      %{"Name" => "Australia", "CCA3" => "AUS"},
+      %{"Name" => "Austria", "CCA3" => "AUT"},
+      %{"Name" => "Azerbaijan", "CCA3" => "AZE"},
+      %{"Name" => "Bahamas", "CCA3" => "BHS"},
+      %{"Name" => "Bahrain", "CCA3" => "BHR"},
+      %{"Name" => "Bangladesh", "CCA3" => "BGD"},
+      %{"Name" => "Barbados", "CCA3" => "BRB"},
+      %{"Name" => "Belarus", "CCA3" => "BLR"},
+      %{"Name" => "Belgium", "CCA3" => "BEL"},
+      %{"Name" => "Belize", "CCA3" => "BLZ"},
+      %{"Name" => "Benin", "CCA3" => "BEN"},
+      %{"Name" => "Bhutan", "CCA3" => "BTN"},
+      %{"Name" => "Bolivia", "CCA3" => "BOL"},
+      %{"Name" => "Bosnia and Herzegovina", "CCA3" => "BIH"},
+      %{"Name" => "Botswana", "CCA3" => "BWA"},
+      %{"Name" => "Brazil", "CCA3" => "BRA"},
+      %{"Name" => "Brunei Darussalam", "CCA3" => "BRN"},
+      %{"Name" => "Bulgaria", "CCA3" => "BGR"},
+      %{"Name" => "Burkina Faso", "CCA3" => "BFA"},
+      %{"Name" => "Burundi", "CCA3" => "BDI"},
+      %{"Name" => "Cabo Verde", "CCA3" => "CPV"},
+      %{"Name" => "Cambodia", "CCA3" => "KHM"},
+      %{"Name" => "Cameroon", "CCA3" => "CMR"},
+      %{"Name" => "Canada", "CCA3" => "CAN"},
+      %{"Name" => "Central African Republic", "CCA3" => "CAF"},
+      %{"Name" => "Chad", "CCA3" => "TCD"},
+      %{"Name" => "Chile", "CCA3" => "CHL"},
+      %{"Name" => "China", "CCA3" => "CHN"},
+      %{"Name" => "Colombia", "CCA3" => "COL"},
+      %{"Name" => "Comoros", "CCA3" => "COM"},
+      %{"Name" => "Congo", "CCA3" => "COG"},
+      %{"Name" => "Congo, Democratic Republic of the", "CCA3" => "COD"},
+      %{"Name" => "Costa Rica", "CCA3" => "CRI"},
+      %{"Name" => "Côte d'Ivoire", "CCA3" => "CIV"},
+      %{"Name" => "Croatia", "CCA3" => "HRV"},
+      %{"Name" => "Cuba", "CCA3" => "CUB"},
+      %{"Name" => "Cyprus", "CCA3" => "CYP"},
+      %{"Name" => "Czechia", "CCA3" => "CZE"},
+      %{"Name" => "Denmark", "CCA3" => "DNK"},
+      %{"Name" => "Djibouti", "CCA3" => "DJI"},
+      %{"Name" => "Dominica", "CCA3" => "DMA"},
+      %{"Name" => "Dominican Republic", "CCA3" => "DOM"},
+      %{"Name" => "Ecuador", "CCA3" => "ECU"},
+      %{"Name" => "Egypt", "CCA3" => "EGY"},
+      %{"Name" => "El Salvador", "CCA3" => "SLV"},
+      %{"Name" => "Equatorial Guinea", "CCA3" => "GNQ"},
+      %{"Name" => "Eritrea", "CCA3" => "ERI"},
+      %{"Name" => "Estonia", "CCA3" => "EST"},
+      %{"Name" => "Eswatini", "CCA3" => "SWZ"},
+      %{"Name" => "Ethiopia", "CCA3" => "ETH"},
+      %{"Name" => "Fiji", "CCA3" => "FJI"},
+      %{"Name" => "Finland", "CCA3" => "FIN"},
+      %{"Name" => "France", "CCA3" => "FRA"},
+      %{"Name" => "Gabon", "CCA3" => "GAB"},
+      %{"Name" => "Gambia", "CCA3" => "GMB"},
+      %{"Name" => "Georgia", "CCA3" => "GEO"},
+      %{"Name" => "Germany", "CCA3" => "DEU"},
+      %{"Name" => "Ghana", "CCA3" => "GHA"},
+      %{"Name" => "Greece", "CCA3" => "GRC"},
+      %{"Name" => "Grenada", "CCA3" => "GRD"},
+      %{"Name" => "Guatemala", "CCA3" => "GTM"},
+      %{"Name" => "Guinea", "CCA3" => "GIN"},
+      %{"Name" => "Guinea-Bissau", "CCA3" => "GNB"},
+      %{"Name" => "Guyana", "CCA3" => "GUY"},
+      %{"Name" => "Haiti", "CCA3" => "HTI"},
+      %{"Name" => "Honduras", "CCA3" => "HND"},
+      %{"Name" => "Hungary", "CCA3" => "HUN"},
+      %{"Name" => "Iceland", "CCA3" => "ISL"},
+      %{"Name" => "India", "CCA3" => "IND"},
+      %{"Name" => "Indonesia", "CCA3" => "IDN"},
+      %{"Name" => "Iran", "CCA3" => "IRN"},
+      %{"Name" => "Iraq", "CCA3" => "IRQ"},
+      %{"Name" => "Ireland", "CCA3" => "IRL"},
+      %{"Name" => "Israel", "CCA3" => "ISR"},
+      %{"Name" => "Italy", "CCA3" => "ITA"},
+      %{"Name" => "Jamaica", "CCA3" => "JAM"},
+      %{"Name" => "Japan", "CCA3" => "JPN"},
+      %{"Name" => "Jordan", "CCA3" => "JOR"},
+      %{"Name" => "Kazakhstan", "CCA3" => "KAZ"},
+      %{"Name" => "Kenya", "CCA3" => "KEN"},
+      %{"Name" => "Kiribati", "CCA3" => "KIR"},
+      %{"Name" => "Korea, Democratic People's Republic of", "CCA3" => "PRK"},
+      %{"Name" => "Korea, Republic of", "CCA3" => "KOR"},
+      %{"Name" => "Kuwait", "CCA3" => "KWT"},
+      %{"Name" => "Kyrgyzstan", "CCA3" => "KGZ"},
+      %{"Name" => "Lao People's Democratic Republic", "CCA3" => "LAO"},
+      %{"Name" => "Latvia", "CCA3" => "LVA"},
+      %{"Name" => "Lebanon", "CCA3" => "LBN"},
+      %{"Name" => "Lesotho", "CCA3" => "LSO"},
+      %{"Name" => "Liberia", "CCA3" => "LBR"},
+      %{"Name" => "Libya", "CCA3" => "LBY"},
+      %{"Name" => "Liechtenstein", "CCA3" => "LIE"},
+      %{"Name" => "Lithuania", "CCA3" => "LTU"},
+      %{"Name" => "Luxembourg", "CCA3" => "LUX"},
+      %{"Name" => "Madagascar", "CCA3" => "MDG"},
+      %{"Name" => "Malawi", "CCA3" => "MWI"},
+      %{"Name" => "Malaysia", "CCA3" => "MYS"},
+      %{"Name" => "Maldives", "CCA3" => "MDV"},
+      %{"Name" => "Mali", "CCA3" => "MLI"},
+      %{"Name" => "Malta", "CCA3" => "MLT"},
+      %{"Name" => "Marshall Islands", "CCA3" => "MHL"},
+      %{"Name" => "Mauritania", "CCA3" => "MRT"},
+      %{"Name" => "Mauritius", "CCA3" => "MUS"},
+      %{"Name" => "Mexico", "CCA3" => "MEX"},
+      %{"Name" => "Micronesia", "CCA3" => "FSM"},
+      %{"Name" => "Moldova", "CCA3" => "MDA"},
+      %{"Name" => "Monaco", "CCA3" => "MCO"},
+      %{"Name" => "Mongolia", "CCA3" => "MNG"},
+      %{"Name" => "Montenegro", "CCA3" => "MNE"},
+      %{"Name" => "Morocco", "CCA3" => "MAR"},
+      %{"Name" => "Mozambique", "CCA3" => "MOZ"},
+      %{"Name" => "Myanmar", "CCA3" => "MMR"},
+      %{"Name" => "Namibia", "CCA3" => "NAM"},
+      %{"Name" => "Nauru", "CCA3" => "NRU"},
+      %{"Name" => "Nepal", "CCA3" => "NPL"},
+      %{"Name" => "Netherlands", "CCA3" => "NLD"},
+      %{"Name" => "New Zealand", "CCA3" => "NZL"},
+      %{"Name" => "Nicaragua", "CCA3" => "NIC"},
+      %{"Name" => "Niger", "CCA3" => "NER"},
+      %{"Name" => "Nigeria", "CCA3" => "NGA"},
+      %{"Name" => "North Macedonia", "CCA3" => "MKD"},
+      %{"Name" => "Norway", "CCA3" => "NOR"},
+      %{"Name" => "Oman", "CCA3" => "OMN"},
+      %{"Name" => "Pakistan", "CCA3" => "PAK"},
+      %{"Name" => "Palau", "CCA3" => "PLW"},
+      %{"Name" => "Palestine, State of", "CCA3" => "PSE"},
+      %{"Name" => "Panama", "CCA3" => "PAN"},
+      %{"Name" => "Papua New Guinea", "CCA3" => "PNG"},
+      %{"Name" => "Paraguay", "CCA3" => "PRY"},
+      %{"Name" => "Peru", "CCA3" => "PER"},
+      %{"Name" => "Philippines", "CCA3" => "PHL"},
+      %{"Name" => "Poland", "CCA3" => "POL"},
+      %{"Name" => "Portugal", "CCA3" => "PRT"},
+      %{"Name" => "Qatar", "CCA3" => "QAT"},
+      %{"Name" => "Romania", "CCA3" => "ROU"},
+      %{"Name" => "Russian Federation", "CCA3" => "RUS"},
+      %{"Name" => "Rwanda", "CCA3" => "RWA"},
+      %{"Name" => "Saint Kitts and Nevis", "CCA3" => "KNA"},
+      %{"Name" => "Saint Lucia", "CCA3" => "LCA"},
+      %{"Name" => "Saint Vincent and the Grenadines", "CCA3" => "VCT"},
+      %{"Name" => "Samoa", "CCA3" => "WSM"},
+      %{"Name" => "San Marino", "CCA3" => "SMR"},
+      %{"Name" => "Sao Tome and Principe", "CCA3" => "STP"},
+      %{"Name" => "Saudi Arabia", "CCA3" => "SAU"},
+      %{"Name" => "Senegal", "CCA3" => "SEN"},
+      %{"Name" => "Serbia", "CCA3" => "SRB"},
+      %{"Name" => "Seychelles", "CCA3" => "SYC"},
+      %{"Name" => "Sierra Leone", "CCA3" => "SLE"},
+      %{"Name" => "Singapore", "CCA3" => "SGP"},
+      %{"Name" => "Slovakia", "CCA3" => "SVK"},
+      %{"Name" => "Slovenia", "CCA3" => "SVN"},
+      %{"Name" => "Solomon Islands", "CCA3" => "SLB"},
+      %{"Name" => "Somalia", "CCA3" => "SOM"},
+      %{"Name" => "South Africa", "CCA3" => "ZAF"},
+      %{"Name" => "South Sudan", "CCA3" => "SSD"},
+      %{"Name" => "Spain", "CCA3" => "ESP"},
+      %{"Name" => "Sri Lanka", "CCA3" => "LKA"},
+      %{"Name" => "Sudan", "CCA3" => "SDN"},
+      %{"Name" => "Suriname", "CCA3" => "SUR"},
+      %{"Name" => "Sweden", "CCA3" => "SWE"},
+      %{"Name" => "Switzerland", "CCA3" => "CHE"},
+      %{"Name" => "Syrian Arab Republic", "CCA3" => "SYR"},
+      %{"Name" => "Tajikistan", "CCA3" => "TJK"},
+      %{"Name" => "Tanzania, United Republic of", "CCA3" => "TZA"},
+      %{"Name" => "Thailand", "CCA3" => "THA"},
+      %{"Name" => "Timor-Leste", "CCA3" => "TLS"},
+      %{"Name" => "Togo", "CCA3" => "TGO"},
+      %{"Name" => "Tonga", "CCA3" => "TON"},
+      %{"Name" => "Trinidad and Tobago", "CCA3" => "TTO"},
+      %{"Name" => "Tunisia", "CCA3" => "TUN"},
+      %{"Name" => "Turkey", "CCA3" => "TUR"},
+      %{"Name" => "Turkmenistan", "CCA3" => "TKM"},
+      %{"Name" => "Tuvalu", "CCA3" => "TUV"},
+      %{"Name" => "Uganda", "CCA3" => "UGA"},
+      %{"Name" => "Ukraine", "CCA3" => "UKR"},
+      %{"Name" => "United Arab Emirates", "CCA3" => "ARE"},
+      %{"Name" => "United Kingdom", "CCA3" => "GBR"},
+      %{"Name" => "United States of America", "CCA3" => "USA"},
+      %{"Name" => "Uruguay", "CCA3" => "URY"},
+      %{"Name" => "Uzbekistan", "CCA3" => "UZB"},
+      %{"Name" => "Vanuatu", "CCA3" => "VUT"},
+      %{"Name" => "Vatican City (Holy See)", "CCA3" => "VAT"},
+      %{"Name" => "Venezuela", "CCA3" => "VEN"},
+      %{"Name" => "Viet Nam", "CCA3" => "VNM"},
+      %{"Name" => "Yemen", "CCA3" => "YEM"},
+      %{"Name" => "Zambia", "CCA3" => "ZMB"},
+      %{"Name" => "Zimbabwe", "CCA3" => "ZWE"}
+    ]
+  end
+
+  def list_by(:cca3, items) do
+    items |> Enum.map(fn a -> a["CCA3"] end)
+  end
+
+  def list_by(:name, items) do
+    items |> Enum.map(fn a -> a["Name"] end)
+  end
+
+  defp error(code) do
+    {:error,
+     "Looks like #{code} is not a valid Alpha-3 code for country. `https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3`"}
+  end
+
+  def get_country_by(:cca3, cca3) when is_binary(cca3) do
+    case filter(list_countries(), fn a -> a["CCA3"] == cca3 end) do
+      [] -> error(cca3)
+      [a] -> {:ok, a}
+    end
+  end
+
+  def get_country_by(:name, name) when is_binary(name) do
+    case filter(list_countries(), fn a -> String.upcase(a["Name"]) == String.upcase(name) end) do
+      [] -> error(name)
+      [a] -> {:ok, a}
+    end
+  end
+
+  defp filter(items, predicate) when is_list(items) and is_function(predicate) do
+    Enum.filter(items, predicate)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+l = AgentRestCountries.CCA3.list_countries()
+v = AgentRestCountries.CCA3.list_by(:name, l)
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+vc = AgentRestCountries.CCA3.list_by(:cca3, l)
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+vb = AgentRestCountries.CCA3.get_country_by(:cca3, "IND")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+vc = AgentRestCountries.CCA3.get_country_by(:name, "InDIa")
+```
+
+## Building blocks for Ollama Tools
+
+```elixir
+defmodule AgentRestCountries.OllamaWrapper do
+  defstruct model: "gemma3",
+            baseUrl: "http://localhost",
+            port: 11434,
+            endpoint: "/api",
+            client: Ollama,
+            stream: false,
+            prompt: String,
+            messages: [],
+            composedUrl: String,
+            tools: []
+
+  def client(%__MODULE__{} = module) do
+    ollama_url = module.baseUrl <> ":" <> "#{module.port}" <> module.endpoint
+    IO.inspect(ollama_url, lable: "ollam_url")
+    %{module | client: Ollama.init(ollama_url), composedUrl: ollama_url}
+  end
+
+  def with_tools(%__MODULE__{} = module, tool) when is_map(tool) do
+    # TODO: ++ on lists are not optimal fix it.
+    %{module | tools: module.tools ++ [tool]}
+    end
+
+  def with_tools(%__MODULE__{} = module, tools) when is_list(tools) do
+    %{module | tools: module.tools ++ tools}
+  end
+
+  def with_tools(%__MODULE__{} = module, _tool), do: module
+
+    def with_messages(%__MODULE__{} = module, _message), do: module
+
+  def with_model(%__MODULE__{} = module, model) when is_binary(model) do
+    %{module | model: model}
+  end
+
+  def with_model(%__MODULE__{} = module, _model), do: module
+
+  def with_prompt(%__MODULE__{} = module, prompt) when is_binary(prompt) do
+    %{module | prompt: prompt}
+  end
+
+  def with_prompt(%__MODULE__{} = module, _prompt), do: module
+
+  def with_port(%__MODULE__{} = module, port) when is_integer(port) do
+    %{module | port: port}
+  end
+
+  def with_port(%__MODULE__{} = module, _port), do: module
+
+  def with_base_url(%__MODULE__{} = module, baseUrl) when is_binary(baseUrl) do
+    %{module | baseUrl: baseUrl}
+  end
+
+  def with_base_url(%__MODULE__{} = module, _baseUrl), do: module
+
+  def completion(%__MODULE__{} = module) do
+    Ollama.completion(module.client,
+      model: module.model,
+      prompt: module.prompt,
+      stream: module.stream
+    )
+  end
+
+end
+```
+
+### Create the Ollama client via OllamaWrapper.
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+ow = AgentRestCountries.OllamaWrapper.client(%AgentRestCountries.OllamaWrapper{})
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+ow.composedUrl
+```
+
+```elixir
+alias AgentRestCountries.OllamaWrapper
+
+
+ollama_client_with_port_11444 = %AgentRestCountries.OllamaWrapper{}
+|> AgentRestCountries.OllamaWrapper.with_base_url("http://192.168.29.140")
+|> AgentRestCountries.OllamaWrapper.with_port(11444)
+```
