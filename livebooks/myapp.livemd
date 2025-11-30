@@ -44,14 +44,31 @@ defmodule User do
             file: "",
             time: "",
             date: ""
+
+  def to_string(user) do
+    """
+    ### File:
+     #{user.file}
+    | User | PC Name| date| time|
+    | :---: | :---:| :---:| :---: |
+    | #{user.name}  | #{user.client}| #{user.date} | #{user.time}|
+    """
+  end
 end
 
 defmodule VehicleData do
   defstruct km: 0,
             vin: "",
             name: ""
-end
 
+  def to_string(vehicle) do
+    """
+    | Name | VIN| Km| 
+    | :---: | :---:| :---:| 
+    | #{vehicle.name}  | #{vehicle.vin}| #{vehicle.km} |
+    """
+  end
+end
 ```
 
 <!-- livebook:{"reevaluate_automatically":true} -->
@@ -85,7 +102,8 @@ defmodule XmlHandler do
         Diagnosebloecke: [
           ~x"//Diagnosebloecke/Diagnoseblock"l,
           id: ~x"./Adresse/text()"S,
-          sw: ~x"./SWVersion/text()"S
+          sw: ~x"./SWVersion/text()"S,
+          description: ~x"./Systembezeichnung/text()"S
         ]
       )
 
@@ -112,23 +130,52 @@ form =
   )
 
 outputFrame = Kino.Frame.new()
+
+h1 =
+  Kino.HTML.new("""
+  <h1>IDEx XML Parser</h1>
+
+  <p>This app helps you decode and extract the specific fields of the IDEx XML file.</p>
+  """)
+
 Kino.listen(form, fn event ->
   %{data: %{file: %{file_ref: file_ref}}} = event
   Kino.Frame.render(outputFrame, "Parsing XML...")
-  
+
+  # {:file, validator} = file_ref
+  # if validator == "" do
+  #   Kino.interrupt!(:error, "Please provide the XML file..")
+  # end
+
   v = FileHandler.read(file_ref)
-  user = XmlHandler.getUser(v.content)
-  vehicle = XmlHandler.getVehicleData(v.content)
-  tabs = Kino.Layout.tabs(IDs: Kino.DataTable.new(XmlHandler.getEcus(v.content, ["0009", "0019", "8103"])),
-    User: Kino.DataTable.new([user]),
-    Vehicle: Kino.DataTable.new([vehicle]),
-    AllIDs: Kino.DataTable.new(XmlHandler.getEcus(v.content))
-  )
+
+  userDetails =
+    v.content
+    |> XmlHandler.getUser()
+    |> User.to_string()
+    |> Kino.Markdown.new()
+
+  vehicleDetails =
+    v.content
+    |> XmlHandler.getVehicleData()
+    |> VehicleData.to_string()
+    |> Kino.Markdown.new()
+
+  tabs =
+    Kino.Layout.tabs(
+      User: userDetails,
+      Vehicle: vehicleDetails,
+      Important_IDs:
+        Kino.DataTable.new(
+          XmlHandler.getEcus(v.content, ["0009", "0019", "8103", "8124", "812C"])
+        ),
+      All_IDs: Kino.DataTable.new(XmlHandler.getEcus(v.content))
+    )
+
   Kino.Frame.render(outputFrame, tabs)
-  
 end)
 
-Kino.Layout.grid([form, outputFrame])
+Kino.Layout.grid([h1, form, outputFrame])
 ```
 
-<!-- livebook:{"offset":2890,"stamp":{"token":"XCP.8ucml671MMLWAwovQ6_scCrhFT01BzL6i2dmgp4EZicEIm2DyC-zxPwLeJTtH0LSFAdbp-DhIPJI3l3V-uV27X9S1UsAyY6ctmEWoAIyhLz1qa-CA8Wou1NN","version":2}} -->
+<!-- livebook:{"offset":3799,"stamp":{"token":"XCP.MeQcXksFC4Ay-d7Lz09uzaa5X9eL0iD4zEQqPVnKX4HiKSyL9QsGXyuswS8SxMHpJta-nivVfgSDUg0i3IzUjn3bli7fZ6cdTRdo2i_HazI_RaCJrfI1-yPR","version":2}} -->
