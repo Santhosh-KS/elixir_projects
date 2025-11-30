@@ -1,0 +1,134 @@
+<!-- livebook:{"app_settings":{"auto_shutdown_ms":5000,"multi_session":true,"output_type":"rich","slug":"fa"}} -->
+
+# XML extractor App
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.17.0"},
+  {:sweet_xml, "~> 0.7.5"}
+])
+```
+
+## Section
+
+#### IDEx XML Extractor
+
+This app extracts the important information retreived from Diagnostics output from IDEx tool
+
+```elixir
+defmodule FileHandler do
+
+  def get() do
+    Kino.Input.file("Upload your file", accept: ~w(.xml))
+  end
+
+  def read(file_ref) do
+    path = Kino.Input.file_path(file_ref)
+    %{path: path, content: File.read!(path)}
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Ecu do
+  @enforce_keys [:id]
+  defstruct id: "",
+            swv: ""
+end
+
+defmodule User do
+  defstruct name: "",
+            client: "",
+            file: "",
+            time: "",
+            date: ""
+end
+
+defmodule VehicleData do
+  defstruct km: 0,
+            vin: "",
+            name: ""
+end
+
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule XmlHandler do
+  import SweetXml
+
+  def getUser(content) do
+    %User{
+      name: content |> xpath(~x"//User/text()"S),
+      client: content |> xpath(~x"//ClientName/text()"S),
+      file: content |> xpath(~x"//Dateiname/text()"S),
+      time: content |> xpath(~x"//Zeit/text()"),
+      date: content |> xpath(~x"//Datum/text()")
+    }
+  end
+
+  def getVehicleData(content) do
+    %VehicleData{
+      vin: content |> xpath(~x"//Fahrgestellnummer/text()"S),
+      km: content |> xpath(~x"//WegStrecke/text()"i),
+      name: content |> xpath(~x"//UserProjekt/text()"S)
+    }
+  end
+
+  def getEcus(content) do
+    diagnostics =
+      content
+      |> xmap(
+        Diagnosebloecke: [
+          ~x"//Diagnosebloecke/Diagnoseblock"l,
+          id: ~x"./Adresse/text()"S,
+          sw: ~x"./SWVersion/text()"S
+        ]
+      )
+
+    Map.get(diagnostics, :Diagnosebloecke)
+  end
+
+  def getEcus(content, ids) do
+    diagList = getEcus(content)
+    a = Enum.map(ids, fn id -> Enum.filter(diagList, fn map -> map.id == id end) end)
+    List.flatten(a)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      file: FileHandler.get()
+    ],
+    submit: "Parse"
+  )
+
+outputFrame = Kino.Frame.new()
+Kino.listen(form, fn event ->
+  %{data: %{file: %{file_ref: file_ref}}} = event
+  Kino.Frame.render(outputFrame, "Parsing XML...")
+  
+  v = FileHandler.read(file_ref)
+  user = XmlHandler.getUser(v.content)
+  vehicle = XmlHandler.getVehicleData(v.content)
+  tabs = Kino.Layout.tabs(IDs: Kino.DataTable.new(XmlHandler.getEcus(v.content, ["0009", "0019", "8103"])),
+    User: Kino.DataTable.new([user]),
+    Vehicle: Kino.DataTable.new([vehicle]),
+    AllIDs: Kino.DataTable.new(XmlHandler.getEcus(v.content))
+  )
+  Kino.Frame.render(outputFrame, tabs)
+  
+end)
+
+Kino.Layout.grid([form, outputFrame])
+```
+
+<!-- livebook:{"offset":2890,"stamp":{"token":"XCP.8ucml671MMLWAwovQ6_scCrhFT01BzL6i2dmgp4EZicEIm2DyC-zxPwLeJTtH0LSFAdbp-DhIPJI3l3V-uV27X9S1UsAyY6ctmEWoAIyhLz1qa-CA8Wou1NN","version":2}} -->
